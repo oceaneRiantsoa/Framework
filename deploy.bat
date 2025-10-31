@@ -28,6 +28,13 @@ if errorlevel 1 (
 )
 del sources.txt
 
+
+REM === TEST SPRINT 2BIS ===
+cd build\WEB-INF\classes
+java com.itu.demo.tools.ControllerTest
+cd ..\..\..
+pause
+
 REM Copier librairies tierces (si besoin)
 REM xcopy /y lib\*.jar %BUILD_DIR%\WEB-INF\lib\
 
@@ -39,6 +46,7 @@ cd %BUILD_DIR%
 if exist %APP_NAME%.war del %APP_NAME%.war
 jar -cvf %APP_NAME%.war *
 cd ..
+
 
 REM Déployer sur Tomcat
 if exist "%TOMCAT_WEBAPPS%\%APP_NAME%" rmdir /s /q "%TOMCAT_WEBAPPS%\%APP_NAME%"
