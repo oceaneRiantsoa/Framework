@@ -28,10 +28,9 @@ if errorlevel 1 (
 )
 del sources.txt
 
-
 REM === TEST SPRINT 2BIS ===
 cd build\WEB-INF\classes
-java com.itu.demo.tools.ControllerTest
+java com.itu.demo.test.TestController
 cd ..\..\..
 pause
 
