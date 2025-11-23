@@ -4,6 +4,7 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import java.io.*;
 import java.util.HashMap;
+import java.util.Map;
 import java.lang.reflect.Method;
 
 public class FrontServlet extends HttpServlet {
@@ -13,13 +14,17 @@ public class FrontServlet extends HttpServlet {
     public void init() throws ServletException {
         super.init();
         try {
-            // Scan des méthodes annotées @Url dans TestController
-            Class<?> testClass = Class.forName("com.itu.demo.test.TestController");
-            for (Method method : testClass.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Url.class)) {
-                    Url urlAnnotation = method.getAnnotation(Url.class);
-                    String urlPath = urlAnnotation.value();
-                    mappingUrls.put(urlPath, new Mapping(testClass.getName(), method.getName()));
+            Class<?>[] controllers = {
+                Class.forName("com.itu.demo.test.TestController"),
+                Class.forName("com.itu.demo.test.TestController2")
+            };
+            for (Class<?> ctrlClass : controllers) {
+                for (Method method : ctrlClass.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(Url.class)) {
+                        Url urlAnnotation = method.getAnnotation(Url.class);
+                        String urlPath = urlAnnotation.value();
+                        mappingUrls.put(urlPath, new Mapping(ctrlClass.getName(), method.getName()));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -50,7 +55,7 @@ public class FrontServlet extends HttpServlet {
             }
         }
 
-        // Sprint 3 & 4 : mapping et réflexion
+        // Sprint 3, 4, 4-bis, 5 : mapping, réflexion, ModelView, données vers la vue
         PrintWriter out = response.getWriter();
         Mapping mapping = mappingUrls.get(url);
         if (mapping != null) {
@@ -64,23 +69,33 @@ public class FrontServlet extends HttpServlet {
                         break;
                     }
                 }
-                out.println("<html><body>");
-                out.println("<h2>Fonction trouvée !</h2>");
-                out.println("Nom : " + mapping.getMethod() + "<br>");
-                out.println("Type de retour : " + (method != null ? method.getReturnType().getSimpleName() : "inconnu") + "<br>");
                 if (method != null) {
                     Object result = method.invoke(instance);
+                    // Sprint 5 : dispatcher si retour ModelView et envoyer les attributs
+                    if (result instanceof ModelView) {
+                        ModelView mv = (ModelView) result;
+                        for (Map.Entry<String, Object> entry : mv.getData().entrySet()) {
+                            request.setAttribute(entry.getKey(), entry.getValue());
+                        }
+                        RequestDispatcher dispatcher = request.getRequestDispatcher("/" + mv.getView());
+                        dispatcher.forward(request, response);
+                        return;
+                    }
+                    // Sprint 4 : afficher le String si retour String
                     if (result instanceof String) {
-                        out.println("Résultat : " + result + "<br>");
+                        out.println(result);
+                        return;
                     }
                 }
+                // Affichage classique
+                out.println("<html><body>");
+                out.println("Nom : " + mapping.getMethod() + "<br>");
                 out.println("</body></html>");
             } catch (Exception e) {
                 out.println("<pre>" + e + "</pre>");
             }
         } else {
             out.println("<html><body>");
-            out.println("<h2>URL appelée : " + url + "</h2>");
             out.println("Aucune méthode associée à cette URL");
             out.println("</body></html>");
         }
